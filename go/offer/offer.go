@@ -74,7 +74,11 @@ func main() {
 
 	// sending offer and then recieving answer through the http server set value to answer
 	sendSDP(offer)
+
+	time.Sleep(10 * time.Second)
+
 	answer := getSDP()
+	fmt.Println(answer)
 	// Apply the answer as the remote description
 	err = peerConnection.SetRemoteDescription(answer)
 	if err != nil {
@@ -92,20 +96,24 @@ func sendSDP(offer webrtc.SessionDescription) {
 		panic(err)
 	}
 
-	response, err := http.Post("http://192.168.1.21:3000/offer", "application/json; charset=utf-8", b)
+	resp, err := http.Post("http://192.168.1.21:3000/offer", "application/json", b)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(response)
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			panic(closeErr)
+		}
+	}()
 }
 
 func getSDP() webrtc.SessionDescription {
 	response, err := http.Get("http://192.168.1.21:3000/get-answer")
 	if err != nil {
-		panic(err)
 	}
 	var answer webrtc.SessionDescription
 	json.NewDecoder(response.Body).Decode(&answer)
-	fmt.Println(response)
+	fmt.Println(answer)
 	return answer
 }

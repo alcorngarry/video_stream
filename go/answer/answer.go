@@ -58,27 +58,24 @@ func main() {
 		})
 	})
 
-	// Create answer
-	answer, err := peerConnection.CreateAnswer(nil)
-	if err != nil {
-		panic(err)
-	}
-
-	//get offer send answer through http server
-	sendSDP(answer)
 	offer := getSDP()
-
 	//setRemote offer
+	fmt.Println(offer)
 	err = peerConnection.SetRemoteDescription(offer)
 	if err != nil {
 		panic(err)
 	}
+
+	// Create answer
+	answer, err := peerConnection.CreateAnswer(nil)
 
 	// Sets the LocalDescription, and starts our UDP listeners
 	err = peerConnection.SetLocalDescription(answer)
 	if err != nil {
 		panic(err)
 	}
+
+	sendSDP(answer)
 
 	// Block forever
 	select {}
@@ -91,20 +88,19 @@ func sendSDP(answer webrtc.SessionDescription) {
 		panic(err)
 	}
 
-	response, err := http.Post("http://192.168.1.21:3000/answer", "application/json; charset=utf-8", b)
+	resp, err := http.Post("http://192.168.1.21:3000/answer", "application/json", b)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(response)
+	defer resp.Body.Close()
 }
 
 func getSDP() webrtc.SessionDescription {
 	response, err := http.Get("http://192.168.1.21:3000/get-offer")
 	if err != nil {
-		panic(err)
+		fmt.Println("error")
 	}
 	var offer webrtc.SessionDescription
 	json.NewDecoder(response.Body).Decode(&offer)
-	fmt.Println(response)
 	return offer
 }
